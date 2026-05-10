@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iRacing Endurance Calendar 2026</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3347;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --special: #f59e0b;
+    --nec: #10b981;
+    --get: #3b82f6;
+    --gte: #8b5cf6;
+    --imsa: #ef4444;
+    --gridfinder: #64748b;
+    --attending: #22c55e;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  a { color: var(--get); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Header */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    flex: 1;
+    min-width: 180px;
+  }
+  header h1 span { color: var(--special); }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .btn:hover { background: var(--border); }
+  .btn-primary { background: var(--get); border-color: var(--get); }
+  .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
+
+  /* Shared banner */
+  #shared-banner {
+    display: none;
+    background: #1e3a5f;
+    border-bottom: 1px solid #3b82f6;
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #93c5fd;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #shared-banner.show { display: flex; }
+  #shared-banner strong { color: var(--text); }
+
+  /* Controls bar */
+  #controls {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .pill:hover { border-color: var(--text); color: var(--text); }
+  .pill.active { color: #fff; border-color: transparent; }
+  .pill[data-s="all"].active   { background: #374151; color: #fff; }
+  .pill[data-s="special"].active { background: var(--special); }
+  .pill[data-s="nec"].active   { background: var(--nec); }
+  .pill[data-s="get"].active   { background: var(--get); }
+  .pill[data-s="gte"].active   { background: var(--gte); }
+  .pill[data-s="imsa"].active  { background: var(--imsa); }
+  .pill[data-s="gridfinder"].active { background: var(--gridfinder); }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .toggle-label input { accent-color: var(--get); }
+  .toggle-label:hover { color: var(--text); }
+
+  /* Upcoming highlight */
+  #upcoming-banner {
+    display: none;
+    margin: 20px 20px 0;
+    background: linear-gradient(135deg, #1a2744 0%, #1e3a1a 100%);
+    border: 1px solid #374151;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 13px;
+  }
+  #upcoming-banner.show { display: block; }
+  #upcoming-banner .up-label { color: var(--muted); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 4px; }
+  #upcoming-banner .up-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  #upcoming-banner .up-meta { color: var(--muted); }
+  #upcoming-banner .up-countdown { font-size: 20px; font-weight: 700; color: var(--attending); margin-top: 6px; }
+
+  /* Grid */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+    padding: 20px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: #4a5568; }
+  .card.past { opacity: .5; }
+  .card.has-attending { border-color: var(--attending); }
+  .card-stripe {
+    height: 3px;
+    background: var(--special);
+  }
+  .card[data-series="nec"] .card-stripe  { background: var(--nec); }
+  .card[data-series="get"] .card-stripe  { background: var(--get); }
+  .card[data-series="gte"] .card-stripe  { background: var(--gte); }
+  .card[data-series="imsa"] .card-stripe { background: var(--imsa); }
+  .card[data-series="gridfinder"] .card-stripe { background: var(--gridfinder); }
+  .card-body { padding: 14px; }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .series-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .card[data-series="special"] .series-badge { color: var(--special); }
+  .card[data-series="nec"]     .series-badge { color: var(--nec); }
+  .card[data-series="get"]     .series-badge { color: var(--get); }
+  .card[data-series="gte"]     .series-badge { color: var(--gte); }
+  .card[data-series="imsa"]    .series-badge { color: var(--imsa); }
+  .card[data-series="gridfinder"] .series-badge { color: var(--gridfinder); }
+  .unconfirmed-badge {
+    font-size: 10px;
+    color: var(--special);
+    opacity: .85;
+  }
+  .card-name {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    line-height: 1.3;
+  }
+  .card-track {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .card-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .card-meta span { white-space: nowrap; }
+  .card-classes {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .class-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .card-note {
+    font-size: 11px;
+    color: var(--special);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .card-countdown {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .card-countdown .cd-time { color: var(--attending); font-weight: 600; }
+  .card-countdown.past-label { color: var(--muted); }
+
+  /* Slots */
+  .slots-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .slot-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: monospace;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .slot-btn:hover { border-color: var(--attending); color: var(--text); }
+  .slot-btn.attending {
+    background: #14532d;
+    border-color: var(--attending);
+    color: var(--attending);
+    font-weight: 600;
+  }
+  .no-slots {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* Past section divider */
+  #past-divider {
+    display: none;
+    padding: 8px 20px 0;
+  }
+  #past-divider.show { display: block; }
+  #past-divider button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #past-divider button:hover { color: var(--text); }
+  #past-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+    padding: 12px 20px 20px;
+  }
+  #past-grid.hidden { display: none; }
+
+  /* Empty state */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+  }
+
+  /* Modal / Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1e3a5f;
+    border: 1px solid var(--get);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #93c5fd;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .25s;
+    pointer-events: none;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  footer span { margin-left: auto; }
+
+  @media (max-width: 600px) {
+    #grid, #past-grid { grid-template-columns: 1fr; padding: 12px; gap: 10px; }
+    header { padding: 10px 12px; }
+    #controls { padding: 8px 12px; }
+    #upcoming-banner { margin: 12px 12px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>iRacing Endurance <span>2026</span></h1>
+  <div class="header-actions">
+    <button class="btn" id="share-btn">&#128279; Share my schedule</button>
+    <button class="btn" id="ical-btn">&#128197; Export iCal</button>
+  </div>
+</header>
+
+<div id="shared-banner">
+  <span>&#128279; <strong>Shared schedule</strong> — you're viewing someone else's selections.</span>
+  <button class="btn btn-primary" id="save-shared-btn">Save to my calendar</button>
+  <button class="btn" id="dismiss-shared-btn">View my own</button>
+</div>
+
+<div id="controls">
+  <div class="pills">
+    <div class="pill active" data-s="all">All</div>
+    <div class="pill" data-s="special">Special Events</div>
+    <div class="pill" data-s="nec">NEC</div>
+    <div class="pill" data-s="get">GET</div>
+    <div class="pill" data-s="gte">GT Endurance</div>
+    <div class="pill" data-s="imsa">IMSA</div>
+    <div class="pill" data-s="gridfinder">Gridfinder</div>
+  </div>
+  <label class="toggle-label">
+    <input type="checkbox" id="attending-only"> My races only
+  </label>
+</div>
+
+<div id="upcoming-banner">
+  <div class="up-label">&#9889; Next up</div>
+  <div class="up-name" id="up-name"></div>
+  <div class="up-meta" id="up-meta"></div>
+  <div class="up-countdown" id="up-countdown"></div>
+</div>
+
+<div id="grid"></div>
+<div id="past-divider">
+  <button id="toggle-past-btn">&#9660; Show past races (<span id="past-count">0</span>)</button>
+</div>
+<div id="past-grid" class="hidden"></div>
+
+<div id="toast"></div>
+
+<footer>
+  <span id="last-updated"></span>
+  <span>&#9888; Dates marked as unconfirmed are estimates. <a href="https://www.iracing.com/special-events/" target="_blank">Verify on iRacing.com</a></span>
+</footer>
+
+<script>
+const SERIES_LABELS = {
+  special:    'Special Events',
+  nec:        'NEC',
+  get:        'GET',
+  gte:        'GT Endurance',
+  imsa:       'IMSA',
+  gridfinder: 'Gridfinder',
+};
+
+let schedule = [];
+let attending = {};   // { raceId: Set<slotIndex> }
+let activeSeries = 'all';
+let attendingOnly = false;
+let isSharedView = false;
+let pastExpanded = false;
+let countdownTimers = [];
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+
+function saveAttending() {
+  if (isSharedView) return;
+  localStorage.setItem('irec-attending', JSON.stringify(
+    Object.fromEntries(Object.entries(attending).map(([k, v]) => [k, [...v]]))
+  ));
+}
+
+function loadAttending() {
+  try {
+    const raw = localStorage.getItem('irec-attending');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    attending = Object.fromEntries(
+      Object.entries(parsed).map(([k, v]) => [k, new Set(v)])
+    );
+  } catch {}
+}
+
+// ── URL hash encoding ─────────────────────────────────────────────────────────
+
+function encodeHash(att) {
+  const parts = [];
+  for (const [id, slots] of Object.entries(att)) {
+    if (slots.size > 0) parts.push(id + ':' + [...slots].sort().join('+'));
+  }
+  return parts.length ? '#s=' + encodeURIComponent(parts.join(',')) : '#';
+}
+
+function decodeHash(hash) {
+  const result = {};
+  const m = hash.match(/[#&]s=([^&]*)/);
+  if (!m) return null;
+  const raw = decodeURIComponent(m[1]);
+  if (!raw) return null;
+  for (const part of raw.split(',')) {
+    const [id, slots] = part.split(':');
+    if (id) result[id] = new Set((slots || '').split('+').map(Number).filter(n => !isNaN(n)));
+  }
+  return result;
+}
+
+// ── Time helpers ──────────────────────────────────────────────────────────────
+
+function fmtSlot(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+}
+
+function fmtSlotShort(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    + ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+}
+
+function fmtCountdown(ms) {
+  if (ms <= 0) return null;
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h ${m % 60}m`;
+  if (h > 0) return `${h}h ${m % 60}m ${s % 60}s`;
+  return `${m}m ${s % 60}s`;
+}
+
+function firstSlot(race) {
+  return race.slots && race.slots.length ? race.slots[0] : null;
+}
+
+function lastSlot(race) {
+  return race.slots && race.slots.length ? race.slots[race.slots.length - 1] : null;
+}
+
+function isPast(race) {
+  if (!race.slots || race.slots.length === 0) return true;
+  const last = new Date(lastSlot(race));
+  last.setTime(last.getTime() + race.duration_h * 3600000);
+  return last < new Date();
+}
+
+function nextSlotMs(race) {
+  const now = Date.now();
+  for (const s of (race.slots || [])) {
+    const t = new Date(s).getTime();
+    if (t > now) return t - now;
+  }
+  return -1;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function buildCard(race) {
+  const att = attending[race.id] || new Set();
+  const past = isPast(race);
+  const hasAtt = att.size > 0;
+
+  const card = document.createElement('div');
+  card.className = 'card' + (past ? ' past' : '') + (hasAtt ? ' has-attending' : '');
+  card.dataset.series = race.series;
+  card.dataset.id = race.id;
+
+  const slotButtons = (race.slots || []).map((slot, i) => {
+    const isAtt = att.has(i);
+    return `<button class="slot-btn ${isAtt ? 'attending' : ''}" data-id="${race.id}" data-i="${i}" title="${fmtSlot(slot)}">${fmtSlotShort(slot)}</button>`;
+  }).join('');
+
+  const classesHtml = (race.car_classes || []).map(c =>
+    `<span class="class-badge">${c}</span>`).join('');
+
+  const metaDate = race.slots && race.slots.length
+    ? new Date(race.slots[0]).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    : '';
+
+  const cdMs = nextSlotMs(race);
+  let cdHtml = '';
+  if (!past && cdMs > 0) {
+    const cd = fmtCountdown(cdMs);
+    cdHtml = `<div class="card-countdown" data-id="${race.id}">Next slot in <span class="cd-time">${cd}</span></div>`;
+  } else if (past) {
+    cdHtml = `<div class="card-countdown past-label">Completed</div>`;
+  }
+
+  const noteHtml = race.notes ? `<div class="card-note">${race.notes}</div>` : '';
+  const unconfHtml = !race.confirmed ? `<span class="unconfirmed-badge">&#9888; Unconfirmed dates</span>` : '';
+
+  const slotsSection = race.slots && race.slots.length
+    ? `<div class="slots-label">Slots — click to mark attending</div><div class="slots">${slotButtons}</div>`
+    : `<div class="no-slots">Season complete — check for next season announcement</div>`;
+
+  card.innerHTML = `
+    <div class="card-stripe"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <span class="series-badge">${SERIES_LABELS[race.series] || race.series}</span>
+        ${unconfHtml}
+      </div>
+      <div class="card-name">${race.name}</div>
+      <div class="card-track">${race.track}</div>
+      <div class="card-meta">
+        ${metaDate ? `<span>&#128197; ${metaDate}</span>` : ''}
+        ${race.duration_h ? `<span>&#9201; ${race.duration_h}h</span>` : ''}
+      </div>
+      ${classesHtml ? `<div class="card-classes">${classesHtml}</div>` : ''}
+      ${noteHtml}
+      ${cdHtml}
+      ${slotsSection}
+    </div>`;
+
+  card.querySelectorAll('.slot-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (isSharedView) return;
+      const id = btn.dataset.id;
+      const i = Number(btn.dataset.i);
+      if (!attending[id]) attending[id] = new Set();
+      if (attending[id].has(i)) attending[id].delete(i);
+      else attending[id].add(i);
+      saveAttending();
+      render();
+    });
+  });
+
+  return card;
+}
+
+function clearCountdowns() {
+  countdownTimers.forEach(clearInterval);
+  countdownTimers = [];
+}
+
+function startCountdowns() {
+  document.querySelectorAll('.card-countdown[data-id]').forEach(el => {
+    const id = el.dataset.id;
+    const race = schedule.find(r => r.id === id);
+    if (!race) return;
+    const timer = setInterval(() => {
+      const cdMs = nextSlotMs(race);
+      const timeEl = el.querySelector('.cd-time');
+      if (!timeEl) { clearInterval(timer); return; }
+      if (cdMs <= 0) { clearInterval(timer); timeEl.textContent = 'Starting...'; return; }
+      timeEl.textContent = fmtCountdown(cdMs);
+    }, 1000);
+    countdownTimers.push(timer);
+  });
+}
+
+function updateUpcomingBanner() {
+  const banner = document.getElementById('upcoming-banner');
+  const now = Date.now();
+  let best = null;
+  let bestMs = Infinity;
+  for (const race of schedule) {
+    const ms = nextSlotMs(race);
+    if (ms > 0 && ms < bestMs) { bestMs = ms; best = race; }
+  }
+  if (!best) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  document.getElementById('up-name').textContent = best.name;
+  document.getElementById('up-meta').textContent = fmtSlot(best.slots.find(s => new Date(s).getTime() > now));
+  const cdEl = document.getElementById('up-countdown');
+  cdEl.textContent = fmtCountdown(bestMs);
+  const bannerTimer = setInterval(() => {
+    const ms = nextSlotMs(best);
+    if (ms <= 0) { clearInterval(bannerTimer); cdEl.textContent = 'Starting now!'; return; }
+    cdEl.textContent = fmtCountdown(ms);
+  }, 1000);
+  countdownTimers.push(bannerTimer);
+}
+
+function render() {
+  clearCountdowns();
+  const grid = document.getElementById('grid');
+  const pastGrid = document.getElementById('past-grid');
+  const pastDivider = document.getElementById('past-divider');
+  grid.innerHTML = '';
+  pastGrid.innerHTML = '';
+
+  let filtered = schedule.filter(r => {
+    if (activeSeries !== 'all' && r.series !== activeSeries) return false;
+    if (attendingOnly && !(attending[r.id] && attending[r.id].size > 0)) return false;
+    return true;
+  });
+
+  const upcoming = filtered.filter(r => !isPast(r));
+  const past = filtered.filter(r => isPast(r));
+
+  if (upcoming.length === 0) {
+    grid.innerHTML = '<div class="empty">No upcoming races match your filter.</div>';
+  } else {
+    upcoming.forEach(r => grid.appendChild(buildCard(r)));
+  }
+
+  document.getElementById('past-count').textContent = past.length;
+  if (past.length > 0) {
+    pastDivider.classList.add('show');
+    past.forEach(r => pastGrid.appendChild(buildCard(r)));
+    document.getElementById('toggle-past-btn').textContent =
+      (pastExpanded ? '▲ Hide' : '▼ Show') + ` past races (${past.length})`;
+    pastGrid.classList.toggle('hidden', !pastExpanded);
+  } else {
+    pastDivider.classList.remove('show');
+  }
+
+  updateUpcomingBanner();
+  startCountdowns();
+}
+
+// ── Share / iCal ──────────────────────────────────────────────────────────────
+
+document.getElementById('share-btn').addEventListener('click', () => {
+  const url = location.origin + location.pathname + encodeHash(attending);
+  navigator.clipboard.writeText(url).then(() => showToast('URL copied to clipboard!')).catch(() => {
+    prompt('Copy this URL:', url);
+  });
+});
+
+document.getElementById('ical-btn').addEventListener('click', exportIcal);
+
+function exportIcal() {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//iRacing Endurance Calendar 2026//EN',
+    'CALSCALE:GREGORIAN',
+    'X-WR-CALNAME:iRacing Endurance 2026',
+    'X-WR-TIMEZONE:UTC',
+  ];
+
+  let count = 0;
+  for (const race of schedule) {
+    const att = attending[race.id];
+    if (!att || att.size === 0) continue;
+    for (const i of att) {
+      const slot = race.slots[i];
+      if (!slot) continue;
+      const start = new Date(slot);
+      const end = new Date(start.getTime() + race.duration_h * 3600000);
+      const fmt = d => d.toISOString().replace(/[-:]/g, '').replace('.000', '');
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:${race.id}-slot${i}@iracing-endurance-cal`,
+        `SUMMARY:${race.name} [iRacing]`,
+        `DTSTART:${fmt(start)}`,
+        `DTEND:${fmt(end)}`,
+        `DESCRIPTION:${SERIES_LABELS[race.series]} · ${race.duration_h}h · ${race.track}${race.car_classes?.length ? ' · ' + race.car_classes.join(', ') : ''}`,
+        `LOCATION:${race.track}`,
+        'END:VEVENT',
+      );
+      count++;
+    }
+  }
+  lines.push('END:VCALENDAR');
+
+  if (count === 0) { showToast('No attended slots to export. Click a slot button first.'); return; }
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'iracing-endurance-2026.ics';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Shared-view controls ──────────────────────────────────────────────────────
+
+document.getElementById('save-shared-btn').addEventListener('click', () => {
+  isSharedView = false;
+  document.getElementById('shared-banner').classList.remove('show');
+  saveAttending();
+  history.replaceState(null, '', location.pathname);
+  render();
+  showToast('Schedule saved to your calendar!');
+});
+
+document.getElementById('dismiss-shared-btn').addEventListener('click', () => {
+  isSharedView = false;
+  attending = {};
+  loadAttending();
+  document.getElementById('shared-banner').classList.remove('show');
+  history.replaceState(null, '', location.pathname);
+  render();
+});
+
+// ── Filter pills ──────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeSeries = pill.dataset.s;
+    render();
+  });
+});
+
+document.getElementById('attending-only').addEventListener('change', e => {
+  attendingOnly = e.target.checked;
+  render();
+});
+
+document.getElementById('toggle-past-btn').addEventListener('click', () => {
+  pastExpanded = !pastExpanded;
+  render();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const res = await fetch('./data/schedule.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    schedule = data.races || [];
+    document.getElementById('last-updated').textContent = `Schedule last updated: ${data.last_updated || 'unknown'}`;
+  } catch (e) {
+    document.getElementById('grid').innerHTML =
+      `<div class="empty">Failed to load schedule.json — if running locally, start a local HTTP server.<br><code>python -m http.server 8080</code></div>`;
+    console.error(e);
+    return;
+  }
+
+  // Shared-schedule URL?
+  const sharedAtt = decodeHash(location.hash);
+  if (sharedAtt && Object.keys(sharedAtt).length > 0) {
+    isSharedView = true;
+    attending = Object.fromEntries(
+      Object.entries(sharedAtt).map(([k, v]) => [k, new Set(v)])
+    );
+    document.getElementById('shared-banner').classList.add('show');
+  } else {
+    loadAttending();
+  }
+
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

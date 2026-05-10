@@ -1,0 +1,62 @@
+name: Monthly Schedule Reminder
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'   # 1st of every month at 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  create-reminder:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create schedule update reminder
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const month = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📅 Schedule check — ${month}`,
+              labels: ['schedule-update'],
+              body: `## Monthly schedule verification
+
+Check each series for newly announced races and update \`data/schedule.json\`.
+
+### Series checklist
+- [ ] **Special Events** — https://www.iracing.com/special-events/
+- [ ] **Nürburgring Endurance Championship (NEC)** — check iRacing series page for new season rounds
+- [ ] **Global Endurance Tour (GET)** — check iRacing series page for S3 announcement
+- [ ] **GT Endurance Series** — check iRacing series page for S3 announcement
+- [ ] **IMSA Sportscar Endurance Challenge** — check iRacing series page for S3 announcement
+- [ ] **Gridfinder / iRTES** — https://gridfinder.com for next season dates
+
+### How to update
+1. Edit \`data/schedule.json\`
+2. Add new race objects following the existing format
+3. Set \`"confirmed": true\` only when dates are officially announced
+4. Update \`"last_updated"\` to today's date
+5. Commit and push — GitHub Pages will update automatically
+
+### JSON race format reference
+\`\`\`json
+{
+  "id": "series-name-year",
+  "series": "special|nec|get|gte|imsa|gridfinder",
+  "name": "Race Name",
+  "track": "Track Name",
+  "duration_h": 4,
+  "confirmed": true,
+  "car_classes": ["GT3", "GT4"],
+  "notes": "Optional note",
+  "slots": [
+    "2026-MM-DDT07:00:00Z",
+    "2026-MM-DDT17:00:00Z"
+  ]
+}
+\`\`\`
+
+Close this issue when \`schedule.json\` has been updated.`
+            });
