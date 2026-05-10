@@ -2,7 +2,7 @@ name: Monthly Schedule Reminder
 
 on:
   schedule:
-    - cron: '0 9 1 * *'   # 1st of every month at 09:00 UTC
+    - cron: '0 9 1 * *'
   workflow_dispatch:
 
 jobs:
@@ -11,52 +11,63 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Create schedule update reminder
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const month = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `📅 Schedule check — ${month}`,
-              labels: ['schedule-update'],
-              body: `## Monthly schedule verification
+      - name: Ensure label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "schedule-update" \
+            --color "0075ca" \
+            --description "Monthly schedule verification reminder" \
+            --repo "${{ github.repository }}" \
+            2>/dev/null || true
 
-Check each series for newly announced races and update \`data/schedule.json\`.
+      - name: Write issue body
+        run: |
+          cat > body.md <<'ENDOFBODY'
+          ## Monthly schedule verification
 
-### Series checklist
-- [ ] **Special Events** — https://www.iracing.com/special-events/
-- [ ] **Nürburgring Endurance Championship (NEC)** — check iRacing series page for new season rounds
-- [ ] **Global Endurance Tour (GET)** — check iRacing series page for S3 announcement
-- [ ] **GT Endurance Series** — check iRacing series page for S3 announcement
-- [ ] **IMSA Sportscar Endurance Challenge** — check iRacing series page for S3 announcement
-- [ ] **Gridfinder / iRTES** — https://gridfinder.com for next season dates
+          Check each series for newly announced races and update `data/schedule.json`.
 
-### How to update
-1. Edit \`data/schedule.json\`
-2. Add new race objects following the existing format
-3. Set \`"confirmed": true\` only when dates are officially announced
-4. Update \`"last_updated"\` to today's date
-5. Commit and push — GitHub Pages will update automatically
+          ### Series checklist
+          - [ ] **Special Events** — https://www.iracing.com/special-events/
+          - [ ] **Nurburgring Endurance Championship (NEC)** — check iRacing series page for new season rounds
+          - [ ] **Global Endurance Tour (GET)** — check iRacing series page for S3 announcement
+          - [ ] **GT Endurance Series** — check iRacing series page for S3 announcement
+          - [ ] **IMSA Sportscar Endurance Challenge** — check iRacing series page for S3 announcement
+          - [ ] **Gridfinder / iRTES** — https://gridfinder.com for next season dates
 
-### JSON race format reference
-\`\`\`json
-{
-  "id": "series-name-year",
-  "series": "special|nec|get|gte|imsa|gridfinder",
-  "name": "Race Name",
-  "track": "Track Name",
-  "duration_h": 4,
-  "confirmed": true,
-  "car_classes": ["GT3", "GT4"],
-  "notes": "Optional note",
-  "slots": [
-    "2026-MM-DDT07:00:00Z",
-    "2026-MM-DDT17:00:00Z"
-  ]
-}
-\`\`\`
+          ### How to update
+          1. Edit `data/schedule.json`
+          2. Add new race objects following the existing format
+          3. Set `"confirmed": true` only when dates are officially announced
+          4. Update `"last_updated"` to today's date
+          5. Commit and push — GitHub Pages updates automatically
 
-Close this issue when \`schedule.json\` has been updated.`
-            });
+          ### Race object format
+          ```json
+          {
+            "id": "series-name-year",
+            "series": "special|nec|get|gte|imsa|gridfinder",
+            "name": "Race Name",
+            "track": "Track Name",
+            "duration_h": 4,
+            "confirmed": true,
+            "car_classes": ["GT3", "GT4"],
+            "notes": "Optional note",
+            "slots": ["2026-MM-DDT07:00:00Z"]
+          }
+          ```
+
+          Close this issue once `schedule.json` has been updated.
+          ENDOFBODY
+
+      - name: Create schedule update issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MONTH=$(date -u +'%B %Y')
+          gh issue create \
+            --title "Schedule check -- $MONTH" \
+            --label "schedule-update" \
+            --body-file body.md \
+            --repo "${{ github.repository }}"
